@@ -1,0 +1,1833 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1565c0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="資格学習">
+<title>資格学習トラッカー</title>
+<style>
+  :root{
+    --primary:#1565c0;
+    --primary-light:#42a5f5;
+    --primary-dark:#0d47a1;
+    --bg:#f4f7fb;
+    --card-bg:#ffffff;
+    --text:#1a1a1a;
+    --muted:#66748a;
+    --danger:#e53935;
+    --radius:12px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",Meiryo,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    font-size:16px;
+    line-height:1.55;
+    -webkit-tap-highlight-color:transparent;
+    min-width:320px;
+  }
+  .app-shell{max-width:600px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+
+  .app-header{
+    background:linear-gradient(135deg,var(--primary-dark),var(--primary));
+    color:#fff;padding:16px 20px;position:sticky;top:0;z-index:10;
+  }
+  .app-header h1{margin:0;font-size:20px;}
+  .header-date{margin:4px 0 0;font-size:14px;opacity:.9;}
+
+  .app-main{flex:1;padding:12px 12px 96px;}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .card{background:var(--card-bg);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+  .card h2{margin:0 0 12px;font-size:17px;color:var(--primary-dark);}
+  .card h3{margin:0 0 8px;font-size:15px;color:var(--primary-dark);}
+
+  .countdown-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .countdown-item{border-left:4px solid var(--primary);background:#eef5ff;border-radius:8px;padding:10px;}
+  .countdown-item.pm{border-left-color:#5e35b1;background:#f4f1fb;}
+  .countdown-item .cd-label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px;}
+  .countdown-item .cd-date{font-size:12px;color:var(--muted);display:block;}
+  .countdown-item .cd-days{font-size:20px;font-weight:bold;color:var(--primary-dark);display:block;margin-top:2px;}
+
+  form label{display:block;margin-bottom:14px;font-size:14px;color:var(--muted);}
+  form input, form select, form textarea{
+    display:block;width:100%;margin-top:6px;padding:10px 12px;font-size:16px;
+    border:1px solid #ccd6e0;border-radius:8px;background:#fff;color:var(--text);font-family:inherit;
+  }
+  form textarea{resize:vertical;}
+
+  .btn-primary{
+    width:100%;min-height:48px;background:var(--primary);color:#fff;border:none;border-radius:10px;
+    font-size:16px;font-weight:bold;cursor:pointer;
+  }
+  .btn-primary:active{background:var(--primary-dark);}
+
+  .today-goal-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+  .today-goal-row label{font-size:14px;color:var(--muted);flex:1;margin-bottom:0;}
+  .today-goal-row input{width:100px;margin-top:0;}
+
+  .progress-info{display:flex;justify-content:space-between;font-size:14px;color:var(--muted);margin-bottom:6px;}
+  .progress-bar-track{background:#e3ecf7;border-radius:8px;height:14px;overflow:hidden;}
+  .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--primary-light),var(--primary));border-radius:8px;transition:width .3s;}
+
+  .weekly-chart{display:flex;justify-content:space-between;align-items:flex-end;height:150px;gap:6px;}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;}
+  .bar-value{font-size:11px;color:var(--muted);margin-bottom:4px;min-height:14px;}
+  .bar{width:70%;background:var(--primary-light);border-radius:4px 4px 0 0;min-height:2px;}
+  .bar-col.today .bar{background:var(--primary-dark);}
+  .bar-label{font-size:10px;color:var(--muted);margin-top:6px;white-space:nowrap;}
+
+  .streak-card{display:flex;flex-direction:column;align-items:center;text-align:center;}
+  .streak-display{display:flex;align-items:baseline;gap:6px;margin-bottom:10px;}
+  .streak-number{font-size:36px;font-weight:bold;color:var(--primary-dark);}
+  .streak-unit{font-size:14px;color:var(--muted);}
+  .badges-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+  .badge{display:flex;flex-direction:column;align-items:center;font-size:11px;color:var(--muted);opacity:.35;}
+  .badge.achieved{opacity:1;}
+  .badge .badge-icon{font-size:26px;}
+
+  .motivation-card p{margin:0;font-size:15px;line-height:1.6;}
+  .quote-card p{margin:0;font-size:14px;font-style:italic;color:var(--muted);}
+
+  .exam-progress-item{margin-bottom:16px;}
+  .exam-progress-item:last-child{margin-bottom:0;}
+  .exam-progress-header{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;font-size:14px;margin-bottom:6px;}
+  .exam-progress-header .exam-name{font-weight:bold;color:var(--text);}
+  .exam-progress-header .exam-hours{color:var(--muted);font-size:13px;}
+
+  #category-filter{width:100%;padding:10px;font-size:16px;border-radius:8px;border:1px solid #ccd6e0;margin-bottom:12px;}
+
+  .category-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:13px;}
+  .category-label{width:100px;flex-shrink:0;color:var(--muted);}
+  .category-bar-track{flex:1;background:#eef2f7;border-radius:6px;height:16px;overflow:hidden;}
+  .category-bar-fill{height:100%;border-radius:6px;}
+  .category-value{width:100px;flex-shrink:0;text-align:right;font-size:12px;color:var(--muted);}
+
+  .monthly-chart{display:flex;align-items:flex-end;gap:10px;height:160px;overflow-x:auto;padding-bottom:4px;}
+  .month-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:40px;}
+  .month-bar{width:24px;background:var(--primary);border-radius:4px 4px 0 0;min-height:2px;}
+  .month-label{font-size:10px;color:var(--muted);margin-top:6px;white-space:nowrap;}
+  .month-value{font-size:10px;color:var(--muted);margin-bottom:4px;white-space:nowrap;}
+
+  .history-item{border-bottom:1px solid #eef1f5;padding:12px 0;}
+  .history-item:last-child{border-bottom:none;}
+  .history-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px;}
+  .history-date{font-weight:bold;font-size:14px;}
+  .history-tags{display:flex;gap:4px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);}
+  .exam-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;}
+  .history-duration{font-size:14px;font-weight:bold;color:var(--primary-dark);white-space:nowrap;}
+  .history-memo{font-size:13px;color:var(--muted);margin-top:4px;}
+  .btn-delete{
+    margin-top:8px;background:none;border:1px solid var(--danger);color:var(--danger);border-radius:8px;
+    padding:6px 14px;font-size:13px;min-height:36px;cursor:pointer;
+  }
+  .btn-delete:active{background:var(--danger);color:#fff;}
+
+  .empty-message{color:var(--muted);font-size:14px;text-align:center;padding:20px 0;}
+
+  .bottom-nav{
+    position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;border-top:1px solid #e3e8ef;
+    box-shadow:0 -2px 8px rgba(0,0,0,.06);z-index:20;padding-bottom:env(safe-area-inset-bottom);
+    max-width:600px;margin:0 auto;
+  }
+  .nav-btn{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    background:none;border:none;min-height:56px;color:var(--muted);font-size:11px;cursor:pointer;
+  }
+  .nav-btn .nav-icon{font-size:20px;}
+  .nav-btn.active{color:var(--primary);}
+
+  .toast{
+    position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:rgba(20,20,20,.9);color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;
+    opacity:0;pointer-events:none;transition:all .3s;z-index:30;max-width:90%;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .goal-settings{display:flex;gap:10px;margin-top:12px;}
+  .goal-settings label{flex:1;font-size:12px;color:var(--muted);margin-bottom:0;}
+  .goal-settings input{margin-top:4px;}
+
+  .btn-secondary{width:100%;min-height:44px;background:#eef2fb;color:var(--primary-dark);border:1px solid #cdd9ef;border-radius:10px;font-size:15px;font-weight:bold;cursor:pointer;}
+  .btn-secondary:active{background:#e0e8f8;}
+
+  .tb-name{margin:0 0 8px;font-weight:bold;font-size:15px;}
+  .tb-remaining{margin:6px 0 0;font-size:13px;color:var(--muted);}
+  .pace-line{margin:8px 0 0;font-size:14px;line-height:1.5;}
+  .pace-line.ok{color:#2e7d32;font-weight:bold;}
+  .pace-line.late{color:#e65100;font-weight:bold;}
+
+  .tb-stats{list-style:none;margin:12px 0 0;padding:0;}
+  .tb-stats li{display:flex;justify-content:space-between;font-size:14px;padding:8px 0;border-bottom:1px solid #eef1f5;color:var(--muted);}
+  .tb-stats li:last-child{border-bottom:none;}
+  .tb-stats li span{color:var(--text);font-weight:bold;}
+
+  .chapter-summary{font-size:14px;color:var(--primary-dark);font-weight:bold;margin-bottom:10px;}
+  .chapter-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #eef1f5;}
+  .chapter-item:last-of-type{border-bottom:none;}
+  .chapter-check{display:flex;align-items:center;gap:10px;flex:1;margin-bottom:0;cursor:pointer;}
+  .chapter-check input{width:22px;height:22px;margin:0;flex-shrink:0;}
+  .chapter-name{font-size:14px;color:var(--text);}
+  .chapter-item.done .chapter-name{text-decoration:line-through;color:var(--muted);}
+  .chapter-pages-label{font-size:12px;color:var(--muted);}
+  .chapter-delete{background:none;border:none;color:var(--muted);font-size:16px;min-height:32px;min-width:32px;cursor:pointer;flex-shrink:0;}
+
+  .chapter-add-form{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .chapter-add-form input{width:auto;margin-top:0;flex:1;min-width:140px;}
+  .chapter-add-form .chapter-pages{flex:0 0 120px;min-width:110px;}
+  .chapter-add-form .btn-secondary{flex-basis:100%;}
+
+  .pagelog-title{font-size:13px;color:var(--muted);margin-top:12px;margin-bottom:6px;}
+  .pagelog-item{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:4px 0;}
+
+  .nav-btn .nav-label{font-size:10px;white-space:nowrap;}
+
+  .quiz-note{font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.55;}
+  .quiz-overall{display:flex;align-items:baseline;gap:8px;justify-content:center;margin-bottom:12px;}
+  .quiz-overall .qo-rate{font-size:30px;font-weight:bold;color:var(--primary-dark);}
+  .quiz-overall .qo-count{font-size:13px;color:var(--muted);}
+  .quiz-toolbar{display:flex;gap:8px;margin-bottom:14px;}
+  .quiz-undo-btn,.quiz-reset-btn{flex:1;min-height:40px;border-radius:8px;font-size:13px;cursor:pointer;}
+  .quiz-undo-btn{background:#eef2fb;border:1px solid #cdd9ef;color:var(--primary-dark);}
+  .quiz-reset-btn{background:#fff;border:1px solid #e0b4b4;color:var(--danger);}
+  .quiz-undo-btn:active{background:#e0e8f8;}
+
+  .quiz-group{font-size:13px;font-weight:bold;color:#fff;background:var(--primary);border-radius:6px;padding:4px 10px;margin:14px 0 8px;}
+  .quiz-field{padding:6px 0 10px;border-bottom:1px solid #eef1f5;}
+  .quiz-field:last-child{border-bottom:none;}
+  .quiz-field-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:5px;}
+  .quiz-field-name{font-size:14px;color:var(--text);}
+  .quiz-field-rate{font-size:14px;font-weight:bold;color:var(--primary-dark);white-space:nowrap;}
+  .quiz-field-count{font-size:11px;color:var(--muted);font-weight:normal;}
+  .quiz-field-actions{display:flex;gap:8px;margin-top:8px;}
+  .quiz-btn{min-height:38px;border-radius:8px;font-size:14px;cursor:pointer;border:1px solid transparent;}
+  .quiz-btn.correct{flex:1;background:#e8f5e9;border-color:#a5d6a7;color:#2e7d32;font-weight:bold;}
+  .quiz-btn.correct:active{background:#c8e6c9;}
+  .quiz-btn.wrong{flex:1;background:#ffebee;border-color:#ef9a9a;color:#c62828;font-weight:bold;}
+  .quiz-btn.wrong:active{background:#ffcdd2;}
+
+  .weak-list{list-style:none;margin:10px 0 0;padding:0;}
+  .weak-list li{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--text);}
+  .weak-list li .weak-rate{font-weight:bold;}
+  .quiz-launch-btn{width:100%;min-height:44px;margin-top:10px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:bold;cursor:pointer;}
+  .btn-link{display:flex;align-items:center;justify-content:center;text-decoration:none;box-sizing:border-box;}
+
+  .phase-card{border:2px solid var(--primary-light);}
+  .phase-name-big{margin:0 0 6px;font-size:18px;font-weight:bold;color:var(--primary-dark);}
+  .phase-focus{margin:0 0 12px;font-size:14px;color:var(--text);line-height:1.6;}
+  .phase-meta{display:flex;gap:10px;}
+  .phase-meta-item{flex:1;background:#eef5ff;border-radius:8px;padding:10px;display:flex;flex-direction:column;align-items:center;}
+  .phase-meta-item .pm-num{font-size:22px;font-weight:bold;color:var(--primary-dark);}
+  .phase-meta-item .pm-label{font-size:11px;color:var(--muted);margin-top:2px;}
+  .phase-note{margin:10px 0 0;font-size:11px;color:var(--muted);}
+
+  .phase-item{border-left:4px solid #cfd8e3;padding:10px 12px;margin-bottom:12px;background:#f8fafc;border-radius:8px;}
+  .phase-item.active{border-left-color:var(--primary);background:#eef5ff;}
+  .phase-item.done{opacity:.6;}
+  .phase-head{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .phase-title{font-size:14px;font-weight:bold;color:var(--text);}
+  .phase-badge{font-size:11px;font-weight:bold;padding:2px 10px;border-radius:10px;white-space:nowrap;}
+  .phase-badge.active{background:var(--primary);color:#fff;}
+  .phase-badge.done{background:#c8e6c9;color:#2e7d32;}
+  .phase-badge.future{background:#e3e8ef;color:var(--muted);}
+  .phase-period{margin:4px 0 0;font-size:12px;color:var(--muted);}
+  .phase-focus-sm{margin:6px 0 0;font-size:13px;color:var(--text);line-height:1.5;}
+  .phase-extra{margin:6px 0 0;font-size:12px;color:var(--primary-dark);font-weight:bold;}
+
+  .pass-exam{margin-bottom:18px;}
+  .pass-exam:last-of-type{margin-bottom:0;}
+  .pass-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px;}
+  .pass-exam-name{font-size:14px;font-weight:bold;color:var(--text);}
+  .pass-rate-num{font-size:28px;font-weight:bold;}
+  .pass-rate-num .pass-unit{font-size:14px;font-weight:normal;color:var(--muted);}
+  .pass-breakdown{list-style:none;margin:10px 0 0;padding:0;}
+  .pass-breakdown li{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);padding:3px 0;}
+  .pass-breakdown li .pb-pts{font-weight:bold;color:var(--primary-dark);white-space:nowrap;}
+  .pass-toggle{background:none;border:none;color:var(--primary);font-size:12px;padding:6px 0;cursor:pointer;text-decoration:underline;}
+  .pass-disclaimer{margin:10px 0 0;font-size:11px;color:var(--muted);}
+
+  .kamoku-b-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #eef1f5;}
+  .kamoku-b-item:last-child{border-bottom:none;}
+  .kb-name{font-size:14px;color:var(--text);font-weight:bold;}
+  .kb-note{font-size:11px;color:var(--primary-dark);background:#eef5ff;border-radius:10px;padding:2px 10px;white-space:nowrap;}
+  .field-star{color:#f9a825;margin-right:3px;}
+
+  .mission-card{border:2px solid var(--primary);}
+  .mission-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;}
+  .mission-phase{font-size:15px;font-weight:bold;color:var(--primary-dark);}
+  .mission-day{font-size:12px;background:var(--primary);color:#fff;border-radius:10px;padding:2px 12px;white-space:nowrap;}
+  .mission-quiz{background:linear-gradient(135deg,var(--primary-dark),var(--primary-light));color:#fff;border-radius:10px;padding:14px;text-align:center;font-size:16px;font-weight:bold;margin-bottom:10px;line-height:1.5;}
+  .mission-quiz .mq-num{font-size:32px;margin:0 2px;}
+  .mission-quiz.alt{background:#eef2fb;color:var(--primary-dark);}
+  .mission-link{width:100%;min-height:46px;background:var(--primary-dark);color:#fff;border-radius:10px;font-size:15px;font-weight:bold;margin-bottom:12px;}
+  .mission-tasks{list-style:none;margin:0;padding:0;}
+  .mission-task{padding:11px 0;border-bottom:1px solid #eef1f5;}
+  .mission-task:last-child{border-bottom:none;}
+  .mission-task label{display:flex;align-items:flex-start;gap:12px;margin-bottom:0;cursor:pointer;font-size:15px;color:var(--text);line-height:1.5;}
+  .mission-task input{width:24px;height:24px;margin:1px 0 0;flex-shrink:0;}
+  .mission-task.done span{text-decoration:line-through;color:var(--muted);}
+  .mission-page{display:flex;gap:8px;align-items:flex-end;margin-top:14px;flex-wrap:wrap;background:#f4f7fb;border-radius:8px;padding:12px;}
+  .mission-page label{flex:1;font-size:13px;color:var(--muted);margin-bottom:0;min-width:160px;}
+  .mission-page input{width:100%;margin-top:5px;padding:10px 12px;font-size:16px;border:1px solid #ccd6e0;border-radius:8px;box-sizing:border-box;}
+  .mission-page .btn-secondary{flex:0 0 88px;min-height:44px;margin-top:0;}
+  .mission-complete{margin-top:14px;background:#e8f5e9;color:#2e7d32;border-radius:10px;padding:16px;text-align:center;font-weight:bold;font-size:16px;animation:pop .5s ease;}
+  @keyframes pop{0%{transform:scale(.85);opacity:0}60%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+  .confetti-piece{position:fixed;top:-20px;width:10px;height:14px;border-radius:2px;z-index:1000;pointer-events:none;animation:confetti-fall 2.4s linear forwards;}
+  @keyframes confetti-fall{to{transform:translateY(110vh) rotate(720deg);opacity:.8;}}
+
+  @media (min-width:400px){
+    .app-header h1{font-size:22px;}
+  }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <h1>📘 資格学習トラッカー</h1>
+    <p class="header-date" id="header-date"></p>
+  </header>
+
+  <main class="app-main">
+    <section id="view-home" class="view active">
+      <div class="card mission-card">
+        <h2>🎯 今日のミッション</h2>
+        <div id="mission-body"></div>
+      </div>
+
+      <div class="card">
+        <h2>試験まであと</h2>
+        <div class="countdown-grid" id="countdown-grid"></div>
+      </div>
+
+      <div class="card">
+        <h2>🎯 現時点の合格率（推定）</h2>
+        <div id="pass-rate-body"></div>
+      </div>
+
+      <div class="card">
+        <h2>今日の学習</h2>
+        <div class="progress-info">
+          <span id="today-actual-label">実績: 0分</span>
+          <span id="today-target-label">目標: 0分</span>
+          <span id="today-percent-label">0%</span>
+        </div>
+        <div class="progress-bar-track"><div class="progress-bar-fill" id="today-progress-fill" style="width:0%"></div></div>
+        <div class="goal-settings">
+          <label>平日目標（分）<input type="number" id="weekday-goal-input" min="0" step="10"></label>
+          <label>土日目標（分）<input type="number" id="weekend-goal-input" min="0" step="10"></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>今週の学習</h2>
+        <div class="progress-info">
+          <span id="week-actual-label">実績: 0分</span>
+          <span id="week-target-label">目標: 0分</span>
+          <span id="week-percent-label">0%</span>
+        </div>
+        <div class="progress-bar-track"><div class="progress-bar-fill" id="week-progress-fill" style="width:0%"></div></div>
+      </div>
+
+      <div class="card">
+        <h2>📖 テキスト進捗</h2>
+        <div id="textbook-home-summary"></div>
+      </div>
+
+      <div class="card">
+        <h2>🥋 過去問 正解率</h2>
+        <div id="quiz-home-summary"></div>
+      </div>
+
+      <div class="card">
+        <h2>直近7日間の学習時間</h2>
+        <div class="weekly-chart" id="weekly-chart"></div>
+      </div>
+
+      <div class="card streak-card">
+        <div class="streak-display">
+          <span class="streak-number" id="streak-number">0</span>
+          <span class="streak-unit">日連続学習中</span>
+        </div>
+        <div class="badges-row" id="badges-row"></div>
+      </div>
+
+      <div class="card motivation-card">
+        <h3>今日のメッセージ</h3>
+        <p id="motivation-message"></p>
+      </div>
+
+      <div class="card quote-card">
+        <h3>今日の一言</h3>
+        <p id="daily-quote"></p>
+      </div>
+    </section>
+
+    <section id="view-input" class="view">
+      <div class="card">
+        <h2>学習記録を追加</h2>
+        <form id="record-form">
+          <label>日付
+            <input type="date" id="record-date" required>
+          </label>
+          <label>試験区分
+            <select id="record-exam" required>
+              <option value="ap">応用情報技術者</option>
+              <option value="pm">プロジェクトマネージャー</option>
+            </select>
+          </label>
+          <label>学習カテゴリ
+            <select id="record-category" required>
+              <option value="morning">午前対策</option>
+              <option value="afternoon">午後対策</option>
+              <option value="essay">論述練習</option>
+              <option value="text">テキスト読み込み</option>
+              <option value="other">その他</option>
+            </select>
+          </label>
+          <label>学習時間（分）
+            <input type="number" id="record-minutes" min="1" step="1" required placeholder="例: 60">
+          </label>
+          <label>メモ（任意）
+            <textarea id="record-memo" rows="3" placeholder="今日気づいたことなど"></textarea>
+          </label>
+          <button type="submit" class="btn-primary">保存</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="view-dashboard" class="view">
+      <div class="card">
+        <h2>📅 学習スケジュール</h2>
+        <div id="schedule-list"></div>
+      </div>
+      <div class="card">
+        <h2>試験別 進捗</h2>
+        <div id="exam-progress-list"></div>
+      </div>
+      <div class="card">
+        <h2>カテゴリ別内訳</h2>
+        <select id="category-filter">
+          <option value="all">全体</option>
+          <option value="ap">応用情報技術者</option>
+          <option value="pm">プロジェクトマネージャー</option>
+        </select>
+        <div id="category-breakdown"></div>
+      </div>
+      <div class="card">
+        <h2>月別学習時間</h2>
+        <div class="monthly-chart" id="monthly-chart"></div>
+      </div>
+      <div class="card">
+        <h2>試験日設定</h2>
+        <form id="exam-dates-form">
+          <label>応用情報 科目A
+            <input type="date" id="exam-date-apA">
+          </label>
+          <label>応用情報 科目B
+            <input type="date" id="exam-date-apB">
+          </label>
+          <label>PM 科目A-1・A-2
+            <input type="date" id="exam-date-pmA">
+          </label>
+          <label>PM 科目B-1・2
+            <input type="date" id="exam-date-pmB">
+          </label>
+          <button type="submit" class="btn-primary">保存</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="view-textbook" class="view">
+      <div class="card">
+        <h2>テキスト進捗</h2>
+        <div id="textbook-progress-detail"></div>
+      </div>
+
+      <div class="card">
+        <h2>到達ページを更新</h2>
+        <form id="page-update-form">
+          <label>現在の到達ページ
+            <input type="number" id="page-input" min="0" step="1" placeholder="例: 120">
+          </label>
+          <button type="submit" class="btn-primary">更新</button>
+        </form>
+        <div id="page-log-list"></div>
+      </div>
+
+      <div class="card">
+        <h2>章の進捗</h2>
+        <div id="chapter-list"></div>
+        <form id="chapter-form" class="chapter-add-form">
+          <input type="text" id="chapter-name-input" placeholder="章の名前（例: 第1章 基礎理論）">
+          <input type="number" id="chapter-pages-input" min="0" step="1" class="chapter-pages" placeholder="ページ数(任意)">
+          <button type="submit" class="btn-secondary">章を追加</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>教材設定</h2>
+        <form id="textbook-settings-form">
+          <label>教材名
+            <input type="text" id="textbook-name-input">
+          </label>
+          <label>総ページ数
+            <input type="number" id="textbook-total-input" min="0" step="1">
+          </label>
+          <label>目標完了日
+            <input type="date" id="textbook-target-input">
+          </label>
+          <button type="submit" class="btn-primary">保存</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="view-quiz" class="view">
+      <div class="card">
+        <h2>過去問道場を開く</h2>
+        <p class="quiz-note">応用情報技術者 過去問道場（外部サイト）を新しいタブで開きます。各分野ランダムで出題されます。解いたら下の分野別ボタンで正誤を記録しましょう。</p>
+        <a class="btn-primary btn-link" href="https://www.ap-siken.com/apkakomon.php" target="_blank" rel="noopener noreferrer">🥋 午前問題を解く（ランダム）</a>
+        <a class="btn-secondary btn-link" href="https://www.ap-siken.com/apkakomon_pm.php" target="_blank" rel="noopener noreferrer" style="margin-top:10px">📝 午後問題を解く</a>
+      </div>
+
+      <div class="card">
+        <h2>科目B（午後）の選択科目</h2>
+        <div id="kamoku-b-list"></div>
+        <p class="quiz-note" style="margin:10px 0 0">💡 文系向け戦略：プログラミング・アルゴリズム系は科目Bで回避済み。数学系分野（基礎理論・アルゴリズム）は<strong>科目Aで6割取れれば十分</strong>なので、深追い不要です。下の★分野を優先して固めましょう。</p>
+      </div>
+
+      <div class="card">
+        <h2>分野別 正解率</h2>
+        <p class="quiz-note">★ = 科目B選択科目に関連する重点分野</p>
+        <div class="quiz-overall" id="quiz-overall"></div>
+        <div class="quiz-toolbar">
+          <button type="button" class="quiz-undo-btn" id="quiz-undo-btn">↩︎ ひとつ戻す</button>
+          <button type="button" class="quiz-reset-btn" id="quiz-reset-btn">全記録をリセット</button>
+        </div>
+        <div id="quiz-field-list"></div>
+      </div>
+    </section>
+
+    <section id="view-history" class="view">
+      <div class="card">
+        <h2>学習履歴</h2>
+        <div id="history-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-view="home"><span class="nav-icon">🏠</span><span class="nav-label">ホーム</span></button>
+    <button class="nav-btn" data-view="input"><span class="nav-icon">✏️</span><span class="nav-label">記録</span></button>
+    <button class="nav-btn" data-view="textbook"><span class="nav-icon">📖</span><span class="nav-label">テキスト</span></button>
+    <button class="nav-btn" data-view="quiz"><span class="nav-icon">🥋</span><span class="nav-label">過去問</span></button>
+    <button class="nav-btn" data-view="dashboard"><span class="nav-icon">📊</span><span class="nav-label">進捗</span></button>
+    <button class="nav-btn" data-view="history"><span class="nav-icon">🗂️</span><span class="nav-label">履歴</span></button>
+  </nav>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  const STORAGE_KEY = 'studyTrackerRecords_v1';
+  const WEEKDAY_GOAL_KEY = 'studyTrackerWeekdayGoal_v1';
+  const WEEKEND_GOAL_KEY = 'studyTrackerWeekendGoal_v1';
+  const TEXTBOOK_KEY = 'studyTrackerTextbook_v1';
+  const PAGELOG_KEY = 'studyTrackerPageLog_v1';
+  const QUIZ_KEY = 'studyTrackerQuizStats_v1';
+  const MISSION_DONE_KEY = 'studyTrackerMissionDone_v1';
+
+  const KAKOMON_AP = 'https://www.ap-siken.com/apkakomon.php';
+  const KAKOMON_PM = 'https://www.pm-siken.com/pmkakomon.php';
+
+  // 祝日（土日と同じ扱い）。ユーザー指定リスト(2025-2026)＋学習期間に一致する2026-2027の祝日を併載。
+  const HOLIDAYS = new Set([
+    // --- ユーザー指定（2025-2026） ---
+    '2025-07-21','2025-08-11','2025-09-15','2025-09-23','2025-10-13',
+    '2025-11-03','2025-11-23','2025-11-24','2026-01-01','2026-01-12',
+    '2026-02-11','2026-02-23','2026-03-20',
+    // --- 学習期間(2026-2027)に一致する祝日 ---
+    '2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23','2026-10-12',
+    '2026-11-03','2026-11-23','2027-01-01','2027-01-11','2027-02-11','2027-02-23','2027-03-20'
+  ]);
+
+  // 学習フェーズ定義（今日の日付から自動判定）
+  const MISSION_PHASES = [
+    { id: 1, name: '応用情報 基礎固め期',      focus: 'キタミ式読了＋章ごとの過去問',   start: '2026-07-13', end: '2026-08-31', exam: 'ap',
+      weekday: { read: 12, quiz: 10, tasks: ['__READ__', '読んだ章の過去問を10問解く'] },
+      weekend: { read: 20, quiz: 20, tasks: ['__READ__', '過去問を20問解く'] } },
+    { id: 2, name: '応用情報 過去問演習期',    focus: '午前過去問を大量に、午後にも着手', start: '2026-09-01', end: '2026-10-15', exam: 'ap',
+      weekday: { quiz: 30, tasks: ['午前過去問30問', '午後問題1問（見直し含む）'] },
+      weekend: { quiz: 40, tasks: ['午前過去問40問', '午後問題2問'], biweekly: '1年分通し演習（隔週）' } },
+    { id: 3, name: '応用情報 直前仕上げ期',    focus: '間違い復習と弱点分野の集中演習',   start: '2026-10-16', end: '2026-10-30', exam: 'ap',
+      every: { quiz: 40, tasks: ['間違えた問題の復習20問', '弱点分野の過去問20問'] } },
+    { id: 4, name: '科目B仕上げ期',            focus: '午後（記述）問題を時間計測で演習', start: '2026-11-01', end: '2026-11-27', exam: 'ap',
+      weekday: { quiz: 0, tasks: ['午後問題1問'] },
+      weekend: { quiz: 0, tasks: ['午後問題2〜3問＋時間計測演習'] } },
+    { id: 5, name: 'PM試験インプット期',       focus: 'PMテキスト通読＋午前Ⅱ過去問',    start: '2026-11-28', end: '2026-12-31', exam: 'pm',
+      weekday: { quiz: 10, tasks: ['PMテキストを10ページ読む', '午前Ⅱ過去問10問'] },
+      weekend: { quiz: 20, tasks: ['PMテキストを15ページ読む', '午前Ⅱ過去問20問'] } },
+    { id: 6, name: 'PM論述集中期',             focus: '論述の骨子づくりと通し演習',       start: '2027-01-01', end: '2027-01-31', exam: 'pm',
+      weekday: { quiz: 20, tasks: ['論述の章立て・骨子作成1本、または午前過去問20問'] },
+      weekend: { quiz: 0,  tasks: ['論述1本を時間を計って書き切る（2時間）'] } },
+    { id: 7, name: 'PM直前仕上げ期',           focus: '午前弱点補強＋論述テンプレ確認',   start: '2027-02-01', end: '2027-02-19', exam: 'pm',
+      every: { quiz: 20, tasks: ['午前弱点補強20問', '論述テンプレート確認'] } },
+    { id: 8, name: '科目B論述最終仕上げ期',    focus: '論述を本番同様に書き切る練習',     start: '2027-02-21', end: '2027-03-15', exam: 'pm',
+      weekday: { quiz: 0, tasks: ['論述骨子1本'] },
+      weekend: { quiz: 0, tasks: ['論述1本通し（時間計測）'] } }
+  ];
+
+  const DEFAULT_TEXTBOOK = {
+    name: 'キタミ式イラストIT塾 応用情報技術者(第9版)',
+    totalPages: 900,
+    targetDate: '2026-10-31',
+    chapters: []
+  };
+
+  const QUIZ_URL = 'https://www.ap-siken.com/apkakomon.php';
+  const QUIZ_URL_PM = 'https://www.ap-siken.com/apkakomon_pm.php';
+
+  // 科目B（午後）の選択科目（文系戦略: プログラミング・アルゴリズム回避）
+  const KAMOKU_B_SELECTION = [
+    { name: '情報セキュリティ', note: '必須' },
+    { name: '経営戦略・情報戦略・戦略立案コンサルティング', note: '選択' },
+    { name: 'プロジェクトマネジメント', note: '選択・実務直結' },
+    { name: 'サービスマネジメント', note: '選択' },
+    { name: 'システム監査', note: '選択' }
+  ];
+  // 科目B選択に対応する午前の重点分野（★表示）
+  const KAMOKU_B_FIELD_IDS = ['sec', 'projm', 'servm', 'audit', 'mstrat', 'sstrat', 'splan'];
+
+  const QUIZ_FIELDS = [
+    { id: 'kiso',    name: '基礎理論',                   group: 'テクノロジ系' },
+    { id: 'algo',    name: 'アルゴリズムとプログラミング', group: 'テクノロジ系' },
+    { id: 'comp',    name: 'コンピュータ構成要素',       group: 'テクノロジ系' },
+    { id: 'sysc',    name: 'システム構成要素',           group: 'テクノロジ系' },
+    { id: 'sw',      name: 'ソフトウェア',               group: 'テクノロジ系' },
+    { id: 'hw',      name: 'ハードウェア',               group: 'テクノロジ系' },
+    { id: 'hi',      name: 'ヒューマンインタフェース',   group: 'テクノロジ系' },
+    { id: 'media',   name: 'マルチメディア',             group: 'テクノロジ系' },
+    { id: 'db',      name: 'データベース',               group: 'テクノロジ系' },
+    { id: 'nw',      name: 'ネットワーク',               group: 'テクノロジ系' },
+    { id: 'sec',     name: 'セキュリティ',               group: 'テクノロジ系' },
+    { id: 'dev',     name: 'システム開発技術',           group: 'テクノロジ系' },
+    { id: 'devmgmt', name: 'ソフトウェア開発管理技術',   group: 'テクノロジ系' },
+    { id: 'projm',   name: 'プロジェクトマネジメント',   group: 'マネジメント系' },
+    { id: 'servm',   name: 'サービスマネジメント',       group: 'マネジメント系' },
+    { id: 'audit',   name: 'システム監査',               group: 'マネジメント系' },
+    { id: 'sstrat',  name: 'システム戦略',               group: 'ストラテジ系' },
+    { id: 'splan',   name: 'システム企画',               group: 'ストラテジ系' },
+    { id: 'mstrat',  name: '経営戦略マネジメント',       group: 'ストラテジ系' },
+    { id: 'tstrat',  name: '技術戦略マネジメント',       group: 'ストラテジ系' },
+    { id: 'biz',     name: 'ビジネスインダストリ',       group: 'ストラテジ系' },
+    { id: 'corp',    name: '企業活動',                   group: 'ストラテジ系' },
+    { id: 'law',     name: '法務',                       group: 'ストラテジ系' }
+  ];
+
+  const EXAMS = {
+    ap: { label: '応用情報技術者', color: '#1976d2', goalHours: 175 },
+    pm: { label: 'プロジェクトマネージャー', color: '#5e35b1', goalHours: 200 }
+  };
+
+  const CATEGORIES = {
+    morning:   { label: '午前対策',           color: '#42a5f5' },
+    afternoon: { label: '午後対策',           color: '#26c6da' },
+    essay:     { label: '論述練習',           color: '#7e57c2' },
+    text:      { label: 'テキスト読み込み',   color: '#66bb6a' },
+    other:     { label: 'その他',             color: '#bdbdbd' }
+  };
+
+  const EXAM_DATES_KEY = 'studyTrackerExamDates_v1';
+  const DEFAULT_EXAM_DATES = {
+    apA: '2026-10-31',
+    apB: '2026-11-28',
+    pmA: '2027-02-20',
+    pmB: '2027-03-16'
+  };
+  const EXAM_DATE_DEFS = [
+    { key: 'apA', exam: 'ap', label: '応用情報 科目A' },
+    { key: 'apB', exam: 'ap', label: '応用情報 科目B' },
+    { key: 'pmA', exam: 'pm', label: 'PM 科目A-1・A-2' },
+    { key: 'pmB', exam: 'pm', label: 'PM 科目B-1・2' }
+  ];
+
+  function getMilestones() {
+    return EXAM_DATE_DEFS.map(d => ({ exam: d.exam, label: d.label, date: examDates[d.key] }));
+  }
+
+  const QUOTES = [
+    '継続は力なり。今日の30分が合格を近づける。',
+    '小さな一歩の積み重ねが、大きな成果を生む。',
+    'できない理由より、できる方法を考えよう。',
+    '昨日の自分より今日の自分。少しずつでいい、前に進もう。',
+    '合格者はみな、平凡な日々の積み重ねで結果を出している。',
+    '疲れた日は休むことも学習の一部。無理せず続けよう。',
+    '分からないことをそのままにしない。それが実力の差になる。',
+    '過去は変えられないが、今日の勉強が未来を変える。',
+    '焦らず、腐らず、諦めず。合格までの道のりを楽しもう。',
+    '1日1問でも、積み重ねれば大きな力になる。',
+    '本番を意識した演習が、合格への近道。',
+    '苦手分野こそ、伸びしろがある。',
+    '自分を信じて、コツコツ積み上げよう。',
+    '今日の努力は、未来の自分へのプレゼント。',
+    '継続できる人が、最後に笑う。'
+  ];
+
+  const BADGE_DEFS = [
+    { threshold: 3,   icon: '🔥', label: '3日' },
+    { threshold: 7,   icon: '🥉', label: '7日' },
+    { threshold: 30,  icon: '🥈', label: '30日' },
+    { threshold: 60,  icon: '🥇', label: '60日' },
+    { threshold: 100, icon: '🏆', label: '100日' }
+  ];
+
+  // ---------- Utilities ----------
+  function toDateStr(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function parseLocalDate(str) {
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  function todayStr() { return toDateStr(new Date()); }
+
+  function daysUntil(dateStr) {
+    const target = parseLocalDate(dateStr);
+    target.setHours(0, 0, 0, 0);
+    const now = new Date(); now.setHours(0, 0, 0, 0);
+    return Math.round((target - now) / 86400000);
+  }
+
+  function formatDuration(min) {
+    min = Math.round(min);
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    if (h === 0) return `${m}分`;
+    if (m === 0) return `${h}時間`;
+    return `${h}時間${m}分`;
+  }
+
+  function dayOfYear(date) {
+    const start = new Date(date.getFullYear(), 0, 0);
+    return Math.floor((date - start) / 86400000);
+  }
+
+  function uid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ---------- Data ----------
+  function loadRecords() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+
+  function saveRecords(recs) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(recs));
+  }
+
+  function loadNum(key, def) {
+    const raw = localStorage.getItem(key);
+    return raw !== null ? Number(raw) : def;
+  }
+  function saveNum(key, val) { localStorage.setItem(key, String(val)); }
+  function loadWeekdayGoal() { return loadNum(WEEKDAY_GOAL_KEY, 45); }
+  function loadWeekendGoal() { return loadNum(WEEKEND_GOAL_KEY, 180); }
+
+  function loadTextbook() {
+    try {
+      const raw = localStorage.getItem(TEXTBOOK_KEY);
+      return raw ? Object.assign({}, DEFAULT_TEXTBOOK, JSON.parse(raw)) : Object.assign({}, DEFAULT_TEXTBOOK);
+    } catch (e) { return Object.assign({}, DEFAULT_TEXTBOOK); }
+  }
+  function saveTextbook(tb) { localStorage.setItem(TEXTBOOK_KEY, JSON.stringify(tb)); }
+
+  function loadPageLog() {
+    try {
+      const raw = localStorage.getItem(PAGELOG_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+  function savePageLog(l) { localStorage.setItem(PAGELOG_KEY, JSON.stringify(l)); }
+
+  function loadExamDates() {
+    try {
+      const raw = localStorage.getItem(EXAM_DATES_KEY);
+      return raw ? Object.assign({}, DEFAULT_EXAM_DATES, JSON.parse(raw)) : Object.assign({}, DEFAULT_EXAM_DATES);
+    } catch (e) { return Object.assign({}, DEFAULT_EXAM_DATES); }
+  }
+  function saveExamDates(d) { localStorage.setItem(EXAM_DATES_KEY, JSON.stringify(d)); }
+
+  let records = loadRecords();
+  let textbook = loadTextbook();
+  let pageLog = loadPageLog();
+  let quizStats = loadQuizStats();
+  let quizUndoStack = [];
+  let examDates = loadExamDates();
+
+  // ---------- Week helpers ----------
+  function isWeekend(d) { const g = d.getDay(); return g === 0 || g === 6; }
+  function dailyTargetFor(d) { return isWeekend(d) ? loadWeekendGoal() : loadWeekdayGoal(); }
+  function weekDays(d) {
+    const s = new Date(d); s.setHours(0, 0, 0, 0);
+    const g = s.getDay();
+    s.setDate(s.getDate() - (g === 0 ? 6 : g - 1)); // 週の始まりを月曜に
+    const arr = [];
+    for (let i = 0; i < 7; i++) { const x = new Date(s); x.setDate(s.getDate() + i); arr.push(x); }
+    return arr;
+  }
+
+  // ---------- Rendering: Home ----------
+  function renderHeader() {
+    const now = new Date();
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+    document.getElementById('header-date').textContent =
+      `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日(${weekdays[now.getDay()]})`;
+  }
+
+  function renderCountdowns() {
+    const grid = document.getElementById('countdown-grid');
+    grid.innerHTML = '';
+    getMilestones().forEach(ms => {
+      const days = daysUntil(ms.date);
+      const d = parseLocalDate(ms.date);
+      const dateLabel = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+      let daysLabel;
+      if (days > 0) daysLabel = `あと${days}日`;
+      else if (days === 0) daysLabel = '本日!';
+      else daysLabel = '終了';
+      const div = document.createElement('div');
+      div.className = 'countdown-item' + (ms.exam === 'pm' ? ' pm' : '');
+      div.innerHTML = `
+        <span class="cd-label">${ms.label}</span>
+        <span class="cd-date">${dateLabel}</span>
+        <span class="cd-days">${daysLabel}</span>
+      `;
+      grid.appendChild(div);
+    });
+  }
+
+  function renderTodayGoal() {
+    const wdInput = document.getElementById('weekday-goal-input');
+    const weInput = document.getElementById('weekend-goal-input');
+    if (document.activeElement !== wdInput) wdInput.value = loadWeekdayGoal();
+    if (document.activeElement !== weInput) weInput.value = loadWeekendGoal();
+    const target = dailyTargetFor(new Date());
+    const actual = records.filter(r => r.date === todayStr()).reduce((s, r) => s + r.minutes, 0);
+    const percent = target > 0 ? Math.min(100, Math.round(actual / target * 100)) : 0;
+    document.getElementById('today-actual-label').textContent = `実績: ${formatDuration(actual)}`;
+    document.getElementById('today-target-label').textContent = `目標: ${formatDuration(target)}`;
+    document.getElementById('today-percent-label').textContent = `${percent}%`;
+    document.getElementById('today-progress-fill').style.width = percent + '%';
+  }
+
+  function renderWeekGoal() {
+    const days = weekDays(new Date());
+    const target = days.reduce((s, d) => s + dailyTargetFor(d), 0);
+    const dateStrs = days.map(toDateStr);
+    const actual = records.filter(r => dateStrs.indexOf(r.date) !== -1).reduce((s, r) => s + r.minutes, 0);
+    const percent = target > 0 ? Math.min(100, Math.round(actual / target * 100)) : 0;
+    document.getElementById('week-actual-label').textContent = `実績: ${formatDuration(actual)}`;
+    document.getElementById('week-target-label').textContent = `目標: ${formatDuration(target)}`;
+    document.getElementById('week-percent-label').textContent = `${percent}%`;
+    document.getElementById('week-progress-fill').style.width = percent + '%';
+  }
+
+  function renderWeeklyChart() {
+    const container = document.getElementById('weekly-chart');
+    container.innerHTML = '';
+    const now = new Date();
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      days.push(d);
+    }
+    const totals = days.map(d => {
+      const str = toDateStr(d);
+      return records.filter(r => r.date === str).reduce((s, r) => s + r.minutes, 0);
+    });
+    const max = Math.max(1, ...totals);
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+    days.forEach((d, i) => {
+      const heightPct = Math.max(4, Math.round(totals[i] / max * 100));
+      const col = document.createElement('div');
+      col.className = 'bar-col' + (i === 6 ? ' today' : '');
+      col.innerHTML = `
+        <span class="bar-value">${totals[i] > 0 ? formatDuration(totals[i]) : ''}</span>
+        <div class="bar" style="height:${heightPct}%"></div>
+        <span class="bar-label">${d.getMonth() + 1}/${d.getDate()}(${weekdays[d.getDay()]})</span>
+      `;
+      container.appendChild(col);
+    });
+  }
+
+  function computeStreak() {
+    const studyDates = new Set(records.filter(r => r.minutes > 0).map(r => r.date));
+    let streak = 0;
+    const cursor = new Date(); cursor.setHours(0, 0, 0, 0);
+    if (!studyDates.has(toDateStr(cursor))) {
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    while (studyDates.has(toDateStr(cursor))) {
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+  }
+
+  function renderStreakAndBadges() {
+    const streak = computeStreak();
+    document.getElementById('streak-number').textContent = streak;
+    const row = document.getElementById('badges-row');
+    row.innerHTML = '';
+    BADGE_DEFS.forEach(b => {
+      const achieved = streak >= b.threshold;
+      const div = document.createElement('div');
+      div.className = 'badge' + (achieved ? ' achieved' : '');
+      div.innerHTML = `<span class="badge-icon">${b.icon}</span><span>${b.label}</span>`;
+      row.appendChild(div);
+    });
+    return streak;
+  }
+
+  function renderMotivation(streak) {
+    const totalGoalMinutes = (EXAMS.ap.goalHours + EXAMS.pm.goalHours) * 60;
+    const totalMinutes = records.reduce((s, r) => s + r.minutes, 0);
+    const percent = totalGoalMinutes > 0 ? (totalMinutes / totalGoalMinutes * 100) : 0;
+    let msg;
+    if (totalMinutes === 0) {
+      msg = '学習の記録がまだありません。今日から一歩ずつ始めましょう!';
+    } else if (percent < 10) {
+      msg = `全体の進捗率は${percent.toFixed(1)}%。始まったばかりです。毎日の積み重ねが合格へのカギです。`;
+    } else if (percent < 25) {
+      msg = `全体の進捗率は${percent.toFixed(1)}%。良いスタートです、この調子で続けましょう!`;
+    } else if (percent < 50) {
+      msg = `全体の進捗率は${percent.toFixed(1)}%。着実に前進しています!`;
+    } else if (percent < 75) {
+      msg = `全体の進捗率は${percent.toFixed(1)}%。半分を超えました、ゴールが見えてきました!`;
+    } else if (percent < 100) {
+      msg = `全体の進捗率は${percent.toFixed(1)}%。あと少しで目標達成です、頑張って!`;
+    } else {
+      msg = `全体の進捗率は${percent.toFixed(1)}%。目標を達成しました、素晴らしい努力です!`;
+    }
+    if (streak >= 7) msg += ` 🔥${streak}日連続学習中、この継続力はすごいです!`;
+    else if (streak >= 3) msg += ` 🔥${streak}日連続学習中です!`;
+    document.getElementById('motivation-message').textContent = msg;
+  }
+
+  function renderQuote() {
+    const idx = dayOfYear(new Date()) % QUOTES.length;
+    document.getElementById('daily-quote').textContent = QUOTES[idx];
+  }
+
+  // ---------- Textbook ----------
+  function currentPage() {
+    if (pageLog.length === 0) return 0;
+    return pageLog[pageLog.length - 1].page;
+  }
+
+  function textbookStats() {
+    const total = textbook.totalPages || 0;
+    const cur = currentPage();
+    const remaining = Math.max(0, total - cur);
+    const percent = total > 0 ? Math.min(100, Math.round(cur / total * 100)) : 0;
+    const daysToTarget = textbook.targetDate ? daysUntil(textbook.targetDate) : null;
+    let requiredPace = null;
+    if (remaining > 0 && daysToTarget !== null && daysToTarget > 0) {
+      requiredPace = Math.ceil(remaining / daysToTarget);
+    }
+    let currentPace = null, predictedFinish = null;
+    if (pageLog.length >= 2) {
+      const first = pageLog[0], last = pageLog[pageLog.length - 1];
+      const spanDays = Math.max(1, Math.round((parseLocalDate(last.date) - parseLocalDate(first.date)) / 86400000));
+      const progressed = last.page - first.page;
+      if (progressed > 0) {
+        currentPace = progressed / spanDays;
+        if (remaining > 0) {
+          const daysNeeded = Math.ceil(remaining / currentPace);
+          const pf = new Date(); pf.setHours(0, 0, 0, 0); pf.setDate(pf.getDate() + daysNeeded);
+          predictedFinish = pf;
+        }
+      }
+    }
+    return { total, cur, remaining, percent, daysToTarget, requiredPace, currentPace, predictedFinish };
+  }
+
+  function renderTextbookSummary() {
+    const el = document.getElementById('textbook-home-summary');
+    const s = textbookStats();
+    if (!s.total) {
+      el.innerHTML = '<p class="empty-message">「テキスト」タブで教材を設定してください</p>';
+      return;
+    }
+    let paceLine = '';
+    if (s.remaining === 0) {
+      paceLine = '<p class="pace-line ok">🎉 テキスト完了!お疲れさまでした</p>';
+    } else if (s.requiredPace !== null) {
+      paceLine = `<p class="pace-line">目標まであと<strong>${s.daysToTarget}日</strong>、1日<strong>${s.requiredPace}ページ</strong>で完了できます</p>`;
+    } else if (s.daysToTarget !== null && s.daysToTarget <= 0) {
+      paceLine = '<p class="pace-line late">⚠️ 目標完了日を過ぎています</p>';
+    }
+    el.innerHTML = `
+      <p class="tb-name">${escapeHtml(textbook.name)}</p>
+      <div class="progress-info"><span>${s.cur} / ${s.total}ページ</span><span>${s.percent}%</span></div>
+      <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${s.percent}%"></div></div>
+      <p class="tb-remaining">残り ${s.remaining}ページ</p>
+      ${paceLine}
+    `;
+  }
+
+  function renderTextbookDetail() {
+    const el = document.getElementById('textbook-progress-detail');
+    const s = textbookStats();
+    if (!s.total) {
+      el.innerHTML = '<p class="empty-message">下の「教材設定」で総ページ数を設定してください</p>';
+      return;
+    }
+    let html = '';
+    html += `<div class="progress-info"><span>${s.cur} / ${s.total}ページ</span><span>${s.percent}%</span></div>`;
+    html += `<div class="progress-bar-track"><div class="progress-bar-fill" style="width:${s.percent}%"></div></div>`;
+    html += '<ul class="tb-stats">';
+    html += `<li>残りページ<span>${s.remaining}ページ</span></li>`;
+    if (s.daysToTarget !== null) html += `<li>目標完了日まで<span>${s.daysToTarget > 0 ? s.daysToTarget + '日' : '期限超過'}</span></li>`;
+    if (s.requiredPace !== null) html += `<li>必要ペース<span>1日 ${s.requiredPace}ページ</span></li>`;
+    if (s.currentPace !== null) html += `<li>現在のペース<span>1日 約${s.currentPace.toFixed(1)}ページ</span></li>`;
+    if (s.predictedFinish) {
+      const pf = s.predictedFinish;
+      html += `<li>予想完了日<span>${pf.getFullYear()}/${pf.getMonth() + 1}/${pf.getDate()}</span></li>`;
+    }
+    html += '</ul>';
+    if (s.remaining === 0) {
+      html += '<p class="pace-line ok">🎉 テキスト完了!</p>';
+    } else if (s.predictedFinish && textbook.targetDate) {
+      const onTrack = s.predictedFinish <= parseLocalDate(textbook.targetDate);
+      html += onTrack
+        ? '<p class="pace-line ok">✅ このペースなら目標に間に合います</p>'
+        : '<p class="pace-line late">⚠️ このペースだと目標に間に合いません。ペースを上げましょう</p>';
+    } else if (s.requiredPace !== null) {
+      html += `<p class="pace-line">まずは1日${s.requiredPace}ページを目標にしましょう</p>`;
+    }
+    el.innerHTML = html;
+  }
+
+  function renderPageLog() {
+    const el = document.getElementById('page-log-list');
+    if (pageLog.length === 0) { el.innerHTML = ''; return; }
+    const recent = pageLog.slice(-5).reverse();
+    el.innerHTML = '<div class="pagelog-title">最近の更新</div>' +
+      recent.map(e => `<div class="pagelog-item"><span>${e.date}</span><span>${e.page}ページ</span></div>`).join('');
+  }
+
+  function renderChapters() {
+    const el = document.getElementById('chapter-list');
+    const chapters = textbook.chapters || [];
+    if (chapters.length === 0) {
+      el.innerHTML = '<p class="empty-message">章を追加すると進捗をチェックできます</p>';
+      return;
+    }
+    const doneCount = chapters.filter(c => c.done).length;
+    let html = `<div class="chapter-summary">完了 ${doneCount} / ${chapters.length} 章</div>`;
+    html += chapters.map(c => `
+      <div class="chapter-item ${c.done ? 'done' : ''}">
+        <label class="chapter-check">
+          <input type="checkbox" data-id="${c.id}" ${c.done ? 'checked' : ''}>
+          <span class="chapter-name">${escapeHtml(c.name)}${c.pages ? ` <span class="chapter-pages-label">(${c.pages}p)</span>` : ''}</span>
+        </label>
+        <button class="chapter-delete" data-id="${c.id}" aria-label="削除">✕</button>
+      </div>
+    `).join('');
+    el.innerHTML = html;
+    el.querySelectorAll('input[type=checkbox]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const ch = textbook.chapters.find(c => c.id === cb.dataset.id);
+        if (ch) { ch.done = cb.checked; saveTextbook(textbook); renderChapters(); renderTextbookSummary(); }
+      });
+    });
+    el.querySelectorAll('.chapter-delete').forEach(btn => {
+      btn.addEventListener('click', () => {
+        textbook.chapters = textbook.chapters.filter(c => c.id !== btn.dataset.id);
+        saveTextbook(textbook); renderChapters();
+      });
+    });
+  }
+
+  function renderTextbookSettings() {
+    const nameI = document.getElementById('textbook-name-input');
+    const totalI = document.getElementById('textbook-total-input');
+    const targetI = document.getElementById('textbook-target-input');
+    if (document.activeElement !== nameI) nameI.value = textbook.name || '';
+    if (document.activeElement !== totalI) totalI.value = textbook.totalPages || '';
+    if (document.activeElement !== targetI) targetI.value = textbook.targetDate || '';
+  }
+
+  function renderTextbook() {
+    renderTextbookDetail();
+    renderPageLog();
+    renderChapters();
+    renderTextbookSettings();
+  }
+
+  // ---------- Quiz (過去問道場連携) ----------
+  function loadQuizStats() {
+    try { const raw = localStorage.getItem(QUIZ_KEY); return raw ? JSON.parse(raw) : {}; }
+    catch (e) { return {}; }
+  }
+  function saveQuizStats(s) { localStorage.setItem(QUIZ_KEY, JSON.stringify(s)); }
+
+  function fieldStat(id) {
+    const s = quizStats[id] || {};
+    return { correct: s.correct || 0, total: s.total || 0 };
+  }
+
+  function recordQuiz(id, correct) {
+    const s = fieldStat(id);
+    s.total += 1;
+    if (correct) s.correct += 1;
+    quizStats[id] = s;
+    saveQuizStats(quizStats);
+    quizUndoStack.push({ id, correct });
+  }
+
+  function undoQuiz() {
+    const last = quizUndoStack.pop();
+    if (!last) { showToast('戻せる記録がありません'); return; }
+    const s = fieldStat(last.id);
+    s.total = Math.max(0, s.total - 1);
+    if (last.correct) s.correct = Math.max(0, s.correct - 1);
+    quizStats[last.id] = s;
+    saveQuizStats(quizStats);
+    renderQuiz(); renderQuizSummary(); renderPassRate();
+    showToast('1件戻しました');
+  }
+
+  function rateColor(rate, total) {
+    if (total === 0) return '#cfd8e3';
+    if (rate >= 70) return '#43a047';
+    if (rate >= 50) return '#fbc02d';
+    return '#e53935';
+  }
+
+  function quizOverall() {
+    let c = 0, t = 0;
+    QUIZ_FIELDS.forEach(f => { const s = fieldStat(f.id); c += s.correct; t += s.total; });
+    return { correct: c, total: t, rate: t > 0 ? Math.round(c / t * 100) : 0 };
+  }
+
+  function weakFields(n) {
+    return QUIZ_FIELDS
+      .map(f => { const s = fieldStat(f.id); return { name: f.name, total: s.total, rate: s.total > 0 ? s.correct / s.total * 100 : null }; })
+      .filter(x => x.total >= 3)
+      .sort((a, b) => a.rate - b.rate)
+      .slice(0, n);
+  }
+
+  function openQuiz(url) {
+    window.open(url, '_blank', 'noopener');
+  }
+
+  function renderKamokuB() {
+    const el = document.getElementById('kamoku-b-list');
+    el.innerHTML = KAMOKU_B_SELECTION.map(k => `
+      <div class="kamoku-b-item">
+        <span class="kb-name">${k.name}</span>
+        <span class="kb-note">${k.note}</span>
+      </div>`).join('');
+  }
+
+  function renderQuiz() {
+    const overallEl = document.getElementById('quiz-overall');
+    const o = quizOverall();
+    overallEl.innerHTML = o.total > 0
+      ? `<span class="qo-rate">${o.rate}%</span><span class="qo-count">全体正解率（${o.correct}/${o.total}問）</span>`
+      : '<span class="qo-count">まだ記録がありません。問題を解いたら記録しましょう。</span>';
+
+    const el = document.getElementById('quiz-field-list');
+    let html = '';
+    let curGroup = null;
+    QUIZ_FIELDS.forEach(f => {
+      if (f.group !== curGroup) { curGroup = f.group; html += `<div class="quiz-group">${f.group}</div>`; }
+      const s = fieldStat(f.id);
+      const rate = s.total > 0 ? Math.round(s.correct / s.total * 100) : 0;
+      const color = rateColor(rate, s.total);
+      const star = KAMOKU_B_FIELD_IDS.indexOf(f.id) !== -1 ? '<span class="field-star">★</span>' : '';
+      html += `
+        <div class="quiz-field">
+          <div class="quiz-field-top">
+            <span class="quiz-field-name">${star}${f.name}</span>
+            <span class="quiz-field-rate">${s.total > 0 ? rate + '%' : '—'} <span class="quiz-field-count">(${s.correct}/${s.total})</span></span>
+          </div>
+          <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${s.total > 0 ? rate : 0}%;background:${color}"></div></div>
+          <div class="quiz-field-actions">
+            <button type="button" class="quiz-btn correct" data-id="${f.id}" data-correct="1">⭕ 正解</button>
+            <button type="button" class="quiz-btn wrong" data-id="${f.id}" data-correct="0">❌ 不正解</button>
+          </div>
+        </div>`;
+    });
+    el.innerHTML = html;
+  }
+
+  function renderQuizSummary() {
+    const el = document.getElementById('quiz-home-summary');
+    const o = quizOverall();
+    let html = '';
+    if (o.total === 0) {
+      html = '<p class="empty-message">過去問を解いて正解率を記録しましょう</p>';
+    } else {
+      const color = rateColor(o.rate, o.total);
+      html += `<div class="progress-info"><span>全体正解率</span><span>${o.correct}/${o.total}問</span></div>`;
+      html += `<div class="progress-bar-track"><div class="progress-bar-fill" style="width:${o.rate}%;background:${color}"></div></div>`;
+      html += `<p class="pace-line" style="text-align:center;color:${color};font-weight:bold;">${o.rate}%</p>`;
+      const weak = weakFields(3);
+      if (weak.length > 0) {
+        html += '<ul class="weak-list"><li style="color:var(--muted);font-weight:bold;">苦手な分野<span></span></li>';
+        weak.forEach(w => {
+          html += `<li>${escapeHtml(w.name)}<span class="weak-rate" style="color:${rateColor(w.rate, w.total)}">${Math.round(w.rate)}%</span></li>`;
+        });
+        html += '</ul>';
+      }
+    }
+    html += `<a class="quiz-launch-btn btn-link" href="${QUIZ_URL}" target="_blank" rel="noopener noreferrer">🥋 過去問を解く</a>`;
+    el.innerHTML = html;
+  }
+
+  // ---------- 合格率メーター ----------
+  // ベース値の根拠:
+  //  応用情報25点 = 情報セキュリティマネジメント合格(IPA試験経験+セキュリティ分野)
+  //               + G検定/DX推進アドバイザー(ストラテジ系素地) + 建設業経理士2級(企業活動・会計)
+  //               + CRM/SFA導入プロジェクトのPM実務(システム戦略・企画・プロマネ分野)
+  //  PM22点 = CRM/SFA導入プロジェクトのPM(手探りだが実体験の論述題材あり)
+  //         + 応用情報学習の土台
+  //         ※本人申告: PM経験は浅く優秀なメンバーに支えられている段階のため控えめに設定
+  const SKILL_BASE = { ap: 25, pm: 22 };
+
+  function passEstimates() {
+    const streak = computeStreak();
+    const streakPts = Math.min(streak, 30) / 30 * 5;
+
+    // 応用情報: ベース25 + テキスト20 + 過去問35 + 学習時間10 + 継続5 = 上限95
+    const apMin = records.filter(r => r.exam === 'ap').reduce((s, r) => s + r.minutes, 0);
+    const tbPct = textbook.totalPages > 0 ? Math.min(1, currentPage() / textbook.totalPages) : 0;
+    const o = quizOverall();
+    const confidence = Math.min(1, o.total / 100);  // 100問解くと信頼度MAX
+    const quality = o.total > 0 ? Math.max(0, Math.min(1, (o.rate - 40) / 35)) : 0; // 正解率40%→0点, 75%→満点
+    const apParts = [
+      { label: 'ベース（資格・実務経験）', pts: SKILL_BASE.ap, max: SKILL_BASE.ap },
+      { label: 'テキスト進捗（キタミ式）', pts: tbPct * 20, max: 20 },
+      { label: '過去問正解率（量×質）', pts: quality * confidence * 35, max: 35 },
+      { label: '学習時間（175h目標）', pts: Math.min(1, apMin / (EXAMS.ap.goalHours * 60)) * 10, max: 10 },
+      { label: '継続ボーナス', pts: streakPts, max: 5 }
+    ];
+
+    // PM: ベース22 + 学習時間40 + 論述20 + 継続5 = 87（テキスト決定後に精緻化）
+    const pmMin = records.filter(r => r.exam === 'pm').reduce((s, r) => s + r.minutes, 0);
+    const essayMin = records.filter(r => r.exam === 'pm' && r.category === 'essay').reduce((s, r) => s + r.minutes, 0);
+    const pmParts = [
+      { label: 'ベース（PM実務・題材あり）', pts: SKILL_BASE.pm, max: SKILL_BASE.pm },
+      { label: '学習時間（200h目標）', pts: Math.min(1, pmMin / (EXAMS.pm.goalHours * 60)) * 40, max: 40 },
+      { label: '論述練習（目安30h）', pts: Math.min(1, essayMin / (30 * 60)) * 20, max: 20 },
+      { label: '継続ボーナス', pts: streakPts, max: 5 }
+    ];
+
+    const sum = parts => Math.min(95, parts.reduce((s, p) => s + p.pts, 0));
+    return {
+      ap: { rate: sum(apParts), parts: apParts },
+      pm: { rate: sum(pmParts), parts: pmParts }
+    };
+  }
+
+  function renderPassRate() {
+    const el = document.getElementById('pass-rate-body');
+    const est = passEstimates();
+    const block = (name, e, color) => {
+      const rate = e.rate;
+      const note = rate >= 60
+        ? '<span style="color:#2e7d32;font-weight:bold;">合格圏です!この調子で維持しましょう</span>'
+        : `合格圏（60%）まであと <strong>${(60 - rate).toFixed(1)}%</strong>`;
+      const items = e.parts.map(p =>
+        `<li>${p.label}<span class="pb-pts">+${p.pts.toFixed(1)} <span style="font-weight:normal;color:var(--muted)">/ ${p.max}</span></span></li>`
+      ).join('');
+      return `
+        <div class="pass-exam">
+          <div class="pass-head">
+            <span class="pass-exam-name">${name}</span>
+            <span class="pass-rate-num" style="color:${color}">${rate.toFixed(1)}<span class="pass-unit">%</span></span>
+          </div>
+          <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${rate}%;background:${color}"></div></div>
+          <p class="phase-extra" style="font-weight:normal;color:var(--muted)">${note}</p>
+          <ul class="pass-breakdown">${items}</ul>
+        </div>`;
+    };
+    el.innerHTML =
+      block('応用情報技術者', est.ap, EXAMS.ap.color) +
+      block('プロジェクトマネージャー', est.pm, EXAMS.pm.color) +
+      '<p class="pass-disclaimer">※ 学習状況から算出した独自の推定値です。勉強するほど数字が上がります。</p>';
+  }
+
+  // ---------- 今日のミッション ----------
+  function loadMissionDone() {
+    try { const raw = localStorage.getItem(MISSION_DONE_KEY); return raw ? JSON.parse(raw) : {}; }
+    catch (e) { return {}; }
+  }
+  function saveMissionDone(d) { localStorage.setItem(MISSION_DONE_KEY, JSON.stringify(d)); }
+
+  function isHolidayOrWeekend(d) {
+    const g = d.getDay();
+    if (g === 0 || g === 6) return true;
+    return HOLIDAYS.has(toDateStr(d));
+  }
+
+  function getMissionPhase(dateStr) {
+    return MISSION_PHASES.find(p => dateStr >= p.start && dateStr <= p.end) || null;
+  }
+
+  function buildMission() {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const ds = toDateStr(today);
+    const phase = getMissionPhase(ds);
+    if (!phase) return null;
+    const weekend = isHolidayOrWeekend(today);
+    const cfg = phase.every || (weekend ? phase.weekend : phase.weekday);
+    let texts = cfg.tasks.map(t => {
+      if (t === '__READ__') {
+        const start = currentPage() + 1;
+        const endP = start + cfg.read - 1;
+        return `キタミ式を${start}ページ〜${endP}ページまで読む（${cfg.read}ページ）`;
+      }
+      return t;
+    });
+    if (weekend && cfg.biweekly) {
+      const weeks = Math.floor((today - parseLocalDate(phase.start)) / (7 * 86400000));
+      if (weeks % 2 === 0) texts.push(cfg.biweekly);
+    }
+    const tasks = texts.map((text, i) => ({ id: i, text }));
+    const url = phase.exam === 'pm' ? KAKOMON_PM : KAKOMON_AP;
+    return { phase, weekend, tasks, quizCount: cfg.quiz || 0, url };
+  }
+
+  function celebrate() {
+    const colors = ['#1565c0', '#42a5f5', '#43a047', '#fbc02d', '#e53935', '#8e24aa'];
+    for (let i = 0; i < 40; i++) {
+      const p = document.createElement('div');
+      p.className = 'confetti-piece';
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.background = colors[i % colors.length];
+      p.style.animationDelay = (Math.random() * 0.4) + 's';
+      p.style.animationDuration = (1.8 + Math.random() * 1.2) + 's';
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 3200);
+    }
+  }
+
+  function renderMission() {
+    const el = document.getElementById('mission-body');
+    const m = buildMission();
+    if (!m) {
+      el.innerHTML = '<p class="empty-message">今日は学習フェーズの期間外です（試験日・予備日など）。お疲れさまでした！</p>';
+      return;
+    }
+    const ds = todayStr();
+    const store = loadMissionDone();
+    let done = store[ds] || [];
+    if (done.length !== m.tasks.length) done = new Array(m.tasks.length).fill(false);
+    const allDone = m.tasks.length > 0 && done.every(Boolean);
+    const dayLabel = m.weekend ? '休日・祝日' : '平日';
+
+    let html = '';
+    html += `<div class="mission-head"><span class="mission-phase">${m.phase.name}</span><span class="mission-day">${dayLabel}</span></div>`;
+    if (m.quizCount > 0) {
+      html += `<div class="mission-quiz">📝 今日は過去問道場で<br><span class="mq-num">${m.quizCount}</span>問 解きましょう！</div>`;
+    } else {
+      html += '<div class="mission-quiz alt">✍️ 今日は記述・論述中心の日です</div>';
+    }
+    html += `<a class="mission-link btn-link" href="${m.url}" target="_blank" rel="noopener noreferrer">🥋 過去問道場を開く</a>`;
+    html += '<ul class="mission-tasks">';
+    m.tasks.forEach((t, i) => {
+      html += `<li class="mission-task ${done[i] ? 'done' : ''}"><label><input type="checkbox" data-idx="${i}" ${done[i] ? 'checked' : ''}><span>${escapeHtml(t.text)}</span></label></li>`;
+    });
+    html += '</ul>';
+    if (m.phase.id === 1) {
+      const suggest = currentPage() + (m.weekend ? 20 : 12);
+      html += `<div class="mission-page">
+        <label>📖 今日読み終えたページ番号<input type="number" id="mission-page-input" min="0" step="1" placeholder="例: ${suggest}"></label>
+        <button type="button" class="btn-secondary" id="mission-page-save">記録</button>
+      </div>`;
+    }
+    if (allDone) {
+      html += '<div class="mission-complete">🎉 今日のミッション完了！<br>お疲れさまでした！</div>';
+    }
+    el.innerHTML = html;
+
+    const saveBtn = document.getElementById('mission-page-save');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', () => {
+        const raw = document.getElementById('mission-page-input').value;
+        const page = Number(raw);
+        if (raw === '' || isNaN(page) || page < 0) { showToast('ページ番号を入力してください'); return; }
+        const t = todayStr();
+        pageLog = pageLog.filter(en => en.date !== t);
+        pageLog.push({ date: t, page });
+        pageLog.sort((a, b) => a.date.localeCompare(b.date));
+        savePageLog(pageLog);
+        renderTextbook(); renderTextbookSummary(); renderPassRate(); renderMission();
+        showToast('ページを記録しました');
+      });
+    }
+  }
+
+  // ---------- 学習スケジュール ----------
+  function addDays(dateStr, n) {
+    const d = parseLocalDate(dateStr);
+    d.setDate(d.getDate() + n);
+    return toDateStr(d);
+  }
+
+  // from〜to（両端含む）の期間で、平日/土日の目標設定から確保できる学習時間（分）
+  function capacityBetween(fromStr, toStr) {
+    let d = parseLocalDate(fromStr);
+    const end = parseLocalDate(toStr);
+    let min = 0;
+    let guard = 0;
+    while (d <= end && guard < 1500) {
+      min += dailyTargetFor(d);
+      d.setDate(d.getDate() + 1);
+      guard++;
+    }
+    return min;
+  }
+
+  function getPhases() {
+    return MISSION_PHASES.map(p => ({
+      name: p.name, exam: p.exam, start: p.start, end: p.end, focus: p.focus
+    }));
+  }
+
+  function phaseStatus(p) {
+    const today = todayStr();
+    if (p.end < today) return 'done';
+    if (p.start === null || p.start <= today) return 'active';
+    return 'future';
+  }
+
+  function currentPhase() {
+    const phases = getPhases();
+    for (const p of phases) {
+      if (phaseStatus(p) === 'active') return p;
+    }
+    return null;
+  }
+
+  function fmtDateShort(str) {
+    const d = parseLocalDate(str);
+    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+  }
+
+  function renderCurrentPhase() {
+    const el = document.getElementById('current-phase-body');
+    const p = currentPhase();
+    if (!p) {
+      el.innerHTML = '<p class="empty-message">すべての試験日程が終了しています。「進捗」タブの試験日設定を確認してください。</p>';
+      return;
+    }
+    const days = daysUntil(p.end);
+    const capMin = capacityBetween(todayStr(), p.end);
+    const capHours = (capMin / 60).toFixed(0);
+    el.innerHTML = `
+      <p class="phase-name-big">${p.name}</p>
+      <p class="phase-focus">${p.focus}</p>
+      <div class="phase-meta">
+        <div class="phase-meta-item"><span class="pm-num">${days}</span><span class="pm-label">残り日数</span></div>
+        <div class="phase-meta-item"><span class="pm-num">約${capHours}h</span><span class="pm-label">確保できる学習時間</span></div>
+      </div>
+      <p class="phase-note">※ 現在の目標設定（平日${loadWeekdayGoal()}分・土日${loadWeekendGoal()}分）で計算</p>
+    `;
+  }
+
+  function renderSchedule() {
+    const el = document.getElementById('schedule-list');
+    const phases = getPhases();
+    let html = '';
+    phases.forEach(p => {
+      const status = phaseStatus(p);
+      const startLabel = p.start === null ? '現在' : fmtDateShort(p.start);
+      let statusHtml = '';
+      let extra = '';
+      if (status === 'done') {
+        statusHtml = '<span class="phase-badge done">完了</span>';
+      } else if (status === 'active') {
+        statusHtml = '<span class="phase-badge active">進行中</span>';
+        const days = daysUntil(p.end);
+        const capH = (capacityBetween(todayStr(), p.end) / 60).toFixed(0);
+        let pct = null;
+        if (p.start !== null) {
+          const total = Math.max(1, Math.round((parseLocalDate(p.end) - parseLocalDate(p.start)) / 86400000));
+          const elapsed = Math.max(0, Math.round((parseLocalDate(todayStr()) - parseLocalDate(p.start)) / 86400000));
+          pct = Math.min(100, Math.round(elapsed / total * 100));
+        }
+        extra = `
+          ${pct !== null ? `<div class="progress-bar-track" style="margin-top:8px"><div class="progress-bar-fill" style="width:${pct}%"></div></div>` : ''}
+          <p class="phase-extra">残り${days}日 ／ 確保できる学習時間 約${capH}時間</p>`;
+      } else {
+        statusHtml = '<span class="phase-badge future">予定</span>';
+        const capH = (capacityBetween(p.start, p.end) / 60).toFixed(0);
+        extra = `<p class="phase-extra">期間中に確保できる学習時間 約${capH}時間</p>`;
+      }
+      html += `
+        <div class="phase-item ${status}">
+          <div class="phase-head">
+            <span class="phase-title">${p.name}</span>
+            ${statusHtml}
+          </div>
+          <p class="phase-period">${startLabel} 〜 ${fmtDateShort(p.end)}</p>
+          <p class="phase-focus-sm">${p.focus}</p>
+          ${extra}
+        </div>`;
+    });
+    html += '<p class="phase-note">※ PM試験のスケジュールはおおまかな目安です。テキスト決定後に見直しましょう。</p>';
+    el.innerHTML = html;
+  }
+
+  function renderExamSettings() {
+    EXAM_DATE_DEFS.forEach(d => {
+      const input = document.getElementById('exam-date-' + d.key);
+      if (input && document.activeElement !== input) input.value = examDates[d.key] || '';
+    });
+  }
+
+  function renderHome() {
+    renderHeader();
+    renderMission();
+    renderCountdowns();
+    renderPassRate();
+    renderTodayGoal();
+    renderWeekGoal();
+    renderTextbookSummary();
+    renderQuizSummary();
+    renderWeeklyChart();
+    const streak = renderStreakAndBadges();
+    renderMotivation(streak);
+    renderQuote();
+  }
+
+  // ---------- Rendering: Dashboard ----------
+  function renderExamProgress() {
+    const container = document.getElementById('exam-progress-list');
+    container.innerHTML = '';
+    Object.keys(EXAMS).forEach(key => {
+      const info = EXAMS[key];
+      const totalMin = records.filter(r => r.exam === key).reduce((s, r) => s + r.minutes, 0);
+      const goalMin = info.goalHours * 60;
+      const percent = goalMin > 0 ? Math.round(totalMin / goalMin * 100) : 0;
+      const barWidth = Math.min(100, percent);
+      const div = document.createElement('div');
+      div.className = 'exam-progress-item';
+      div.innerHTML = `
+        <div class="exam-progress-header">
+          <span class="exam-name">${info.label}</span>
+          <span class="exam-hours">${(totalMin / 60).toFixed(1)}h / ${info.goalHours}h（${percent}%）</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" style="width:${barWidth}%;background:${info.color}"></div>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  function renderCategoryBreakdown() {
+    const filter = document.getElementById('category-filter').value;
+    const container = document.getElementById('category-breakdown');
+    container.innerHTML = '';
+    const filtered = filter === 'all' ? records : records.filter(r => r.exam === filter);
+    const totals = {};
+    Object.keys(CATEGORIES).forEach(k => totals[k] = 0);
+    filtered.forEach(r => { totals[r.category] = (totals[r.category] || 0) + r.minutes; });
+    const grandTotal = Object.values(totals).reduce((a, b) => a + b, 0);
+    if (grandTotal === 0) {
+      container.innerHTML = '<p class="empty-message">データがありません</p>';
+      return;
+    }
+    const max = Math.max(...Object.values(totals), 1);
+    Object.keys(CATEGORIES).forEach(key => {
+      const info = CATEGORIES[key];
+      const val = totals[key];
+      const pct = Math.round(val / grandTotal * 100);
+      const barWidth = Math.round(val / max * 100);
+      const row = document.createElement('div');
+      row.className = 'category-row';
+      row.innerHTML = `
+        <span class="category-label">${info.label}</span>
+        <div class="category-bar-track"><div class="category-bar-fill" style="width:${barWidth}%;background:${info.color}"></div></div>
+        <span class="category-value">${formatDuration(val)}（${pct}%）</span>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  function renderMonthlyChart() {
+    const container = document.getElementById('monthly-chart');
+    container.innerHTML = '';
+    if (records.length === 0) {
+      container.innerHTML = '<p class="empty-message">データがありません</p>';
+      return;
+    }
+    const totalsByMonth = {};
+    records.forEach(r => {
+      const key = r.date.slice(0, 7);
+      totalsByMonth[key] = (totalsByMonth[key] || 0) + r.minutes;
+    });
+    const months = Object.keys(totalsByMonth).sort();
+    const max = Math.max(...Object.values(totalsByMonth), 1);
+    months.forEach(m => {
+      const val = totalsByMonth[m];
+      const heightPct = Math.max(4, Math.round(val / max * 100));
+      const [y, mo] = m.split('-');
+      const col = document.createElement('div');
+      col.className = 'month-col';
+      col.innerHTML = `
+        <span class="month-value">${(val / 60).toFixed(1)}h</span>
+        <div class="month-bar" style="height:${heightPct}%"></div>
+        <span class="month-label">${y}/${Number(mo)}</span>
+      `;
+      container.appendChild(col);
+    });
+  }
+
+  function renderDashboard() {
+    renderSchedule();
+    renderExamProgress();
+    renderCategoryBreakdown();
+    renderMonthlyChart();
+    renderExamSettings();
+  }
+
+  // ---------- Rendering: History ----------
+  function renderHistory() {
+    const container = document.getElementById('history-list');
+    container.innerHTML = '';
+    if (records.length === 0) {
+      container.innerHTML = '<p class="empty-message">記録がありません</p>';
+      return;
+    }
+    const sorted = [...records].sort((a, b) => {
+      if (a.date !== b.date) return b.date.localeCompare(a.date);
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
+    sorted.forEach(r => {
+      const examInfo = EXAMS[r.exam];
+      const catInfo = CATEGORIES[r.category];
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      item.innerHTML = `
+        <div class="history-top">
+          <span class="history-date">${r.date}</span>
+          <span class="history-duration">${formatDuration(r.minutes)}</span>
+        </div>
+        <div class="history-tags">
+          <span><span class="exam-dot" style="background:${examInfo.color}"></span>${examInfo.label}</span>
+          <span>・${catInfo.label}</span>
+        </div>
+        ${r.memo ? `<div class="history-memo">${escapeHtml(r.memo)}</div>` : ''}
+        <button class="btn-delete" data-id="${r.id}">削除</button>
+      `;
+      container.appendChild(item);
+    });
+    container.querySelectorAll('.btn-delete').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (confirm('この記録を削除しますか?')) {
+          deleteRecord(btn.dataset.id);
+        }
+      });
+    });
+  }
+
+  function renderAll() {
+    renderHome();
+    renderTextbook();
+    renderKamokuB();
+    renderQuiz();
+    renderDashboard();
+    renderHistory();
+  }
+
+  function deleteRecord(id) {
+    records = records.filter(r => r.id !== id);
+    saveRecords(records);
+    renderAll();
+    showToast('削除しました');
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // ---------- Event bindings ----------
+  document.getElementById('record-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const date = document.getElementById('record-date').value;
+    const exam = document.getElementById('record-exam').value;
+    const category = document.getElementById('record-category').value;
+    const minutes = Number(document.getElementById('record-minutes').value);
+    const memo = document.getElementById('record-memo').value.trim();
+    if (!date || !minutes || minutes <= 0) {
+      showToast('日付と学習時間を正しく入力してください');
+      return;
+    }
+    records.push({ id: uid(), date, exam, category, minutes, memo, createdAt: Date.now() });
+    saveRecords(records);
+    document.getElementById('record-minutes').value = '';
+    document.getElementById('record-memo').value = '';
+    renderAll();
+    showToast('保存しました');
+  });
+
+  document.getElementById('weekday-goal-input').addEventListener('change', (e) => {
+    saveNum(WEEKDAY_GOAL_KEY, Math.max(0, Number(e.target.value) || 0));
+    renderTodayGoal(); renderWeekGoal(); renderSchedule();
+  });
+  document.getElementById('weekend-goal-input').addEventListener('change', (e) => {
+    saveNum(WEEKEND_GOAL_KEY, Math.max(0, Number(e.target.value) || 0));
+    renderTodayGoal(); renderWeekGoal(); renderSchedule();
+  });
+
+  document.getElementById('exam-dates-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const next = {};
+    let valid = true;
+    EXAM_DATE_DEFS.forEach(d => {
+      const v = document.getElementById('exam-date-' + d.key).value;
+      if (!v) valid = false;
+      next[d.key] = v;
+    });
+    if (!valid) { showToast('すべての試験日を入力してください'); return; }
+    if (!(next.apA < next.apB && next.apB < next.pmA && next.pmA < next.pmB)) {
+      showToast('日付の順序を確認してください（科目A→科目B→PM A→PM B）');
+      return;
+    }
+    examDates = next;
+    saveExamDates(examDates);
+    renderAll();
+    showToast('試験日を保存しました');
+  });
+
+  document.getElementById('page-update-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const raw = document.getElementById('page-input').value;
+    const page = Number(raw);
+    if (raw === '' || isNaN(page) || page < 0) { showToast('ページ数を入力してください'); return; }
+    const today = todayStr();
+    pageLog = pageLog.filter(en => en.date !== today);
+    pageLog.push({ date: today, page });
+    pageLog.sort((a, b) => a.date.localeCompare(b.date));
+    savePageLog(pageLog);
+    document.getElementById('page-input').value = '';
+    renderTextbook(); renderTextbookSummary(); renderPassRate();
+    showToast('到達ページを更新しました');
+  });
+
+  document.getElementById('chapter-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('chapter-name-input').value.trim();
+    const pagesRaw = document.getElementById('chapter-pages-input').value;
+    if (!name) { showToast('章の名前を入力してください'); return; }
+    if (!textbook.chapters) textbook.chapters = [];
+    textbook.chapters.push({ id: uid(), name, pages: pagesRaw ? Number(pagesRaw) : null, done: false });
+    saveTextbook(textbook);
+    document.getElementById('chapter-name-input').value = '';
+    document.getElementById('chapter-pages-input').value = '';
+    renderChapters();
+    showToast('章を追加しました');
+  });
+
+  document.getElementById('textbook-settings-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('textbook-name-input').value.trim();
+    textbook.name = name || textbook.name;
+    textbook.totalPages = Math.max(0, Number(document.getElementById('textbook-total-input').value) || 0);
+    textbook.targetDate = document.getElementById('textbook-target-input').value || textbook.targetDate;
+    saveTextbook(textbook);
+    renderTextbook(); renderTextbookSummary(); renderPassRate();
+    showToast('教材設定を保存しました');
+  });
+
+  document.getElementById('mission-body').addEventListener('change', (e) => {
+    const cb = e.target.closest('input[type=checkbox]');
+    if (!cb) return;
+    const m = buildMission();
+    if (!m) return;
+    const ds = todayStr();
+    const store = loadMissionDone();
+    let done = store[ds] || [];
+    if (done.length !== m.tasks.length) done = new Array(m.tasks.length).fill(false);
+    const wasAll = done.length > 0 && done.every(Boolean);
+    done[Number(cb.dataset.idx)] = cb.checked;
+    store[ds] = done;
+    saveMissionDone(store);
+    const nowAll = done.length > 0 && done.every(Boolean);
+    renderMission();
+    if (nowAll && !wasAll) celebrate();
+  });
+
+  document.getElementById('quiz-undo-btn').addEventListener('click', undoQuiz);
+  document.getElementById('quiz-reset-btn').addEventListener('click', () => {
+    if (confirm('過去問の正解率をすべてリセットしますか?')) {
+      quizStats = {}; quizUndoStack = [];
+      saveQuizStats(quizStats);
+      renderQuiz(); renderQuizSummary(); renderPassRate();
+      showToast('リセットしました');
+    }
+  });
+  document.getElementById('quiz-field-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('.quiz-btn');
+    if (!btn) return;
+    recordQuiz(btn.dataset.id, btn.dataset.correct === '1');
+    renderQuiz(); renderQuizSummary(); renderPassRate();
+  });
+
+  document.getElementById('category-filter').addEventListener('change', renderCategoryBreakdown);
+
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('view-' + btn.dataset.view).classList.add('active');
+    });
+  });
+
+  // ---------- Init ----------
+  document.getElementById('record-date').value = todayStr();
+  renderAll();
+
+})();
+</script>
+</body>
+</html>
