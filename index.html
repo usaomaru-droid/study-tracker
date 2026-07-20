@@ -191,6 +191,9 @@
   .nav-btn .nav-label{font-size:10px;white-space:nowrap;}
 
   .quiz-note{font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.55;}
+  .info-note{margin-top:12px;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px;font-size:13px;color:#5d4037;line-height:1.6;}
+  .info-note strong{color:#e65100;}
+  .mission-hint{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.55;background:#f4f7fb;border-radius:8px;padding:9px 11px;}
   .quiz-overall{display:flex;align-items:baseline;gap:8px;justify-content:center;margin-bottom:12px;}
   .quiz-overall .qo-rate{font-size:30px;font-weight:bold;color:var(--primary-dark);}
   .quiz-overall .qo-count{font-size:13px;color:var(--muted);}
@@ -492,9 +495,14 @@
     <section id="view-quiz" class="view">
       <div class="card">
         <h2>過去問道場を開く</h2>
-        <p class="quiz-note">応用情報技術者 過去問道場（外部サイト）を新しいタブで開きます。各分野ランダムで出題されます。解いたら下の分野別ボタンで正誤を記録しましょう。</p>
+        <p class="quiz-note">応用情報技術者 過去問道場（外部サイト）を新しいタブで開きます。解いたら下の分野別ボタンで正誤を記録しましょう。</p>
         <a class="btn-primary btn-link" href="https://www.ap-siken.com/apkakomon.php" target="_blank" rel="noopener noreferrer">🥋 午前問題を解く（ランダム）</a>
         <a class="btn-secondary btn-link" href="https://www.ap-siken.com/apkakomon_pm.php" target="_blank" rel="noopener noreferrer" style="margin-top:10px">📝 午後問題を解く</a>
+        <div class="info-note">
+          <strong>💡 分野を絞って解くには</strong><br>
+          過去問道場は外部サイトのため、アプリから分野を自動指定できません。基礎固め期（〜8/31）は、<strong>道場サイトの「分野を指定して出題」で、その日にテキストで読んだ分野を選んで</strong>解くと効果的です。<br>
+          過去問演習期（9/1〜）以降は全分野ランダムでOKです。
+        </div>
       </div>
 
       <div class="card">
@@ -1365,6 +1373,9 @@
       html += '<div class="mission-quiz alt">✍️ 今日は記述・論述中心の日です</div>';
     }
     html += `<a class="mission-link btn-link" href="${m.url}" target="_blank" rel="noopener noreferrer">🥋 過去問道場を開く</a>`;
+    if (m.phase.id === 1) {
+      html += '<div class="mission-hint">💡 道場の「分野を指定して出題」で、今日読んだ章の分野を選んで解くと効果的です。解いたら「過去問」タブで正誤を記録しましょう。</div>';
+    }
     html += '<ul class="mission-tasks">';
     m.tasks.forEach((t, i) => {
       html += `<li class="mission-task ${done[i] ? 'done' : ''}"><label><input type="checkbox" data-idx="${i}" ${done[i] ? 'checked' : ''}><span>${escapeHtml(t.text)}</span></label></li>`;
